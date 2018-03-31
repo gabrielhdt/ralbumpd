@@ -1,35 +1,59 @@
 #!/usr/bin/perl
 # vim: shiftwidth=4:tabstop=4:expandtab
-#     ralbum.pl -- album based manipulation of mpd
-#     Copyright (C) 2018  Gabriel Hondet
-#
-#     This program is free software: you can redistribute it and/or modify
-#     it under the terms of the GNU General Public License as published by
-#     the Free Software Foundation, either version 3 of the License, or
-#     (at your option) any later version.
-#
-#     This program is distributed in the hope that it will be useful,
-#     but WITHOUT ANY WARRANTY; without even the implied warranty of
-#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#     GNU General Public License for more details.
-#
-#     You should have received a copy of the GNU General Public License
-#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use strict;
-use File::Basename;
-use Audio::MPD;
-use Getopt::Long::Descriptive;
+=head1 NAME
 
-=pod
+ralbum.pl
 
-=head1 MPD album based interface
+=head1 DESCRIPTION
 
 MPD interaction based on albums instead of songs. Allows the user to add a
 random album to the playlist from the collection or go to next album in the
 playlist.
 
+=head1 USAGE
+
+ralbum.pl -r=i|-n|-p|-f
+
+=head1 REQUIRED ARGUMENTS
+
+One of -r, -n, -p or -f
+
+=head1 DEPENDENCIES
+
+Audio::MPD, Getopt::Long::Descriptive
+
+=head1 EXIT STATUS
+
+0 if no error
+
+=head1 AUTHOR
+
+Gabriel Hondet
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2018  Gabriel Hondet
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 =cut
+
+use strict;
+use warnings;
+use Audio::MPD;
+use Getopt::Long::Descriptive;
 
 my ( $opt, $usage ) = describe_options(
     "%c %o",
@@ -58,18 +82,20 @@ sub add_ralbum {
     foreach my $song (@songs) {
         $mpd->playlist->add( $song->file );
     }
+    return 0;
 }
 
+# Skip all songs in the same album than the current song in the playlist
 sub skip_album {
     my $current_album = $mpd->current->album;
     my $new_album = $current_album;    # new_album will change to next album
     while ( $new_album eq $current_album && $mpd->status->state ne "stop" ) {
 
         # as long as the album has not changed, go to next song
-        if ( @_[0] eq "next" ) {
+        if ( $_[0] eq "next" ) {
             $mpd->next;
         }
-        elsif ( @_[0] eq "prev" ) {
+        elsif ( $_[0] eq "prev" ) {
             $mpd->prev;
         }
         $new_album = $mpd->current->album;
@@ -77,9 +103,8 @@ sub skip_album {
     if ( $mpd->status->state eq "stop" ) {    # If playlist exhausted
         add_ralbum;
     }
+    return 0;
 }
-
-srand;
 
 # Avoids going back to the beginning of the playlist if it has been played
 # entirely
@@ -102,6 +127,10 @@ elsif ( $opt->mode eq "prevalbum" ) {
     $mpd->play;
 }
 elsif ( $opt->mode eq "refill" ) {
+    # If stopped do not play
+    if ( $mpd->status->state eq "stop" ) {
+        exit 0;
+    }
     my $csid        = $mpd->current->id;
     my @pl_songs    = $mpd->playlist->as_items;
     my $encountered = 0;
@@ -114,7 +143,6 @@ elsif ( $opt->mode eq "refill" ) {
             $encountered = $csid eq $song->id;
         }
     }
-    print $remaining;
     if ( $remaining <= 2 ) {
         add_ralbum;
     }
@@ -122,3 +150,4 @@ elsif ( $opt->mode eq "refill" ) {
 else {
     print($usage);
 }
+exit 0;
