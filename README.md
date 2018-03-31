@@ -11,4 +11,4 @@ instance go to next album in the queue, add a random album, etc.
 
 ## Periodic refresh
 Add to user crontab
-``` */20 * * * * perl path/to/ralbum.pl ```
+``` */20 * * * * perl path/to/ralbum.pl --refill ```
