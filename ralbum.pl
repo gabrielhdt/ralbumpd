@@ -39,6 +39,7 @@ my ( $opt, $usage ) = describe_options(
                 [ "rand|r:i",    "add n random albums to playlist" ],
                 [ "nextalbum|n", "play next album in playlist" ],
                 [ "prevalbum|p", "play previous album in playlist" ],
+                [ "refill|f",    "refill playlist to avoid album shortage" ],
             ]
         }
     ],
@@ -74,7 +75,7 @@ sub skip_album {
         $new_album = $mpd->current->album;
     }
     if ( $mpd->status->state eq "stop" ) {    # If playlist exhausted
-        add_ralbum(1);
+        add_ralbum;
     }
 }
 
@@ -91,15 +92,24 @@ if ( $opt->mode eq "rand" ) {
         add_ralbum;
     }
     $mpd->play;
-}
-elsif ( $opt->mode eq "nextalbum" ) {
+} elsif ( $opt->mode eq "nextalbum" ) {
     skip_album("next");
     $mpd->play;
-}
-elsif ( $opt->mode eq "prevalbum" ) {
+} elsif ( $opt->mode eq "prevalbum" ) {
     skip_album("prev");
     $mpd->play;
-}
-else {
+} elsif ( $opt->mode eq "refill" ) {
+    my $current_song = $mpd->current;
+    my @pl_songs = $mpd->playlist->as_items;
+    my $encountered = 0;
+    my $remaining = 0;
+    foreach my $song (@pl_songs) {
+        $remaining += $encountered = 1 ? 1 : 0;
+        $encountered = $song->id == $current_song->id;
+    }
+    if ( $remaining <= 2 ) {
+        add_ralbum;
+    }
+} else {
     print($usage);
 }
