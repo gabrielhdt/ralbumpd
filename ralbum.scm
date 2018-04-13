@@ -1,4 +1,11 @@
 (require-extension mpd-client)
+(require-extension getopt-long)
+
+; Command line options
+(define clgrammar
+  '((add "Add an album" '((single-char #\a)
+			  (required #f)
+			  (value #f)))))
 
 (define mpd (connect))
 
