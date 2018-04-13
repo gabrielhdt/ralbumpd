@@ -15,6 +15,7 @@ Many features are not yet available on the scheme version!
 ### Requirements
 * chicken scheme compiler
 * mpd-client egg
+* getopt-long egg
 
 ## Periodic refresh
 Add to user crontab
