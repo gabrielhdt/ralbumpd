@@ -12,7 +12,7 @@
 	     (single-char #\v)
 	     (value #f))
     ))
-(getopt-long (argv) clgrammar)
+(define clopts (getopt-long (argv) clgrammar))
 
 ; define mpd as the connection
 (define mpd (connect))
@@ -32,7 +32,7 @@
 (define album-to-filelist
   (lambda (album)
     (let ([songprops (find-songs mpd 'album album)])
-      (map (lambda (sp) (cdr (assv 'file sp))) songprops))))
+      (map (lambda (sp) (cdr (assq 'file sp))) songprops))))
 
 ; [enqueue-songpaths s] enequeues songs in [s] into the playlist. [s] contains
 ; the paths relative to mpd database
@@ -42,11 +42,15 @@
       '()
       (begin (add-song! mpd (car sgps)) (enqueue-songpaths (cdr sgps))))))
 
-(let* ([chosen (choose-album albums)]
-       [songs (album-to-filelist chosen)])
-  (begin (display "chosen album: ")
-	 (display chosen)
-	 (newline)
-	 (display "with songs:")
-	 (display songs))
-         (enqueue-songpaths songs))
+(if (pair? (assq 'add clopts))
+  (let* ([chosen (choose-album albums)]
+	 [songs (album-to-filelist chosen)])
+      (begin
+	 (if (pair? (assq 'verbose clopts))
+	   (begin
+	     (display "Adding album: ")
+	     (display chosen)
+	     (newline))
+	 '())
+	 (enqueue-songpaths songs)))
+  '())
