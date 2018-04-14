@@ -6,32 +6,41 @@
   '((add "Add an album" '((single-char #\a)
 			  (required #f)
 			  (value #f)))))
+;(getopt-long '("ralbum" "-a") clgrammar)
 
+; define mpd as the connection
 (define mpd (connect))
 
+; List of albums in the database
 (define albums (list-metadata mpd 'album))
 
+; [choose-album a] chooses randomly an album among those in [a]
 (define choose-album
   (lambda (albums)
     (let* ([card (length albums)]
 	   [ind (random card)])
       (list-ref albums ind))))
 
+; [album-to-filelist a] returns the paths of songs (relatively to mpd
+; database) of album [a]
 (define album-to-filelist
   (lambda (album)
-    (let ([songprops (find-songs mpd 'album album)]
-	  [songprop-to-file (lambda (songprop)
-			      (assv 'file songprop))])
-      map songprop-to-file (songprops album))))
+    (let ([songprops (find-songs mpd 'album album)])
+      (map (lambda (sp) (cdr (assv 'file sp))) songprops))))
 
-(define add-album-plst
-  (lambda (album)
-    letrec ([loop
-	      (lambda (rsongs)
-		(if (null? rsongs)
-		  #t
-		  (begin (add-song mpd (car rsongs)) (loop (cdr rsongs)))))])
-    loop (album-to-filelist album)))
-(display "chosen album: ")
-(display (choose-album albums))
-(newline)
+; [enqueue-songpaths s] enequeues songs in [s] into the playlist. [s] contains
+; the paths relative to mpd database
+(define enqueue-songpaths
+  (lambda (sgps)
+    (if (null? sgps)
+      '()
+      (begin (add-song! mpd (car sgps)) (enqueue-songpaths (cdr sgps))))))
+
+(let* ([chosen (choose-album albums)]
+       [songs (album-to-filelist chosen)])
+  (begin (display "chosen album: ")
+	 (display chosen)
+	 (newline)
+	 (display "with songs:")
+	 (display songs))
+         (enqueue-songpaths songs))
