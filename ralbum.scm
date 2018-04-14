@@ -3,10 +3,16 @@
 
 ; Command line options
 (define clgrammar
-  '((add "Add an album" '((single-char #\a)
-			  (required #f)
-			  (value #f)))))
-;(getopt-long '("ralbum" "-a") clgrammar)
+  '((add "Add an album"
+	 (single-char #\a)
+	 (required #f)
+	 (value #f))
+    (verbose "Verbose mode"
+	     (required #f)
+	     (single-char #\v)
+	     (value #f))
+    ))
+(getopt-long (argv) clgrammar)
 
 ; define mpd as the connection
 (define mpd (connect))
