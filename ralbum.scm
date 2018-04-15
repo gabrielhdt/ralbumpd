@@ -28,16 +28,16 @@
 (define current-album (cdr (assq 'Album (get-current-song mpd))))
 ; Current playlist
 (define current-playlist (get-playlist mpd))
-
-; [choose-album a] chooses randomly an album among those in [a]
-(define choose-album
-  (lambda (albums)
-    (let* ([card (length albums)]
-           [ind (random card)])
-      (list-ref albums ind))))
-
 ; List of albums in the database
 (define albums (list-metadata mpd 'album))
+
+; [random-elt l] chooses a random element in list [l]
+(define random-elt
+  (lambda (elts)
+    (let* ([card (length elts)]
+           [ind (random card)])
+      (list-ref elts ind))))
+
 
 ; [album-to-filelist a] returns the paths of songs (relatively to mpd
 ; database) of album [a]
@@ -54,6 +54,11 @@
       '()
       (begin (add-song! mpd (car sgps)) (enqueue-songpaths! (cdr sgps))))))
 
+; [enqueue-random-album! m] adds a random album to the playlist of server [m]
+(define enqueue-random-album!
+  (lambda (conn)
+    (enqueue-songpaths! (album-to-filelist (random-elt albums)))))
+
 ; [clear-ante-album a s] removes all songs from songprops [s] before the first
 ; song of album [a]
 (define clear-ante-album
@@ -66,14 +71,16 @@
       (loop songprops))))
 
 ; [skip-album a s] removes all songs from [s] following the first one and
-; which are from the same album
+; which are from the same album. Returns 'exhausted if no next album
 (define skip-album
   (lambda (album songprops)
     (letrec ([loop (lambda (rsgps)
-                     (let ([calb (cdr (assq 'Album (car rsgps)))])
-                       (if (equal? calb album)
-                         (loop (cdr rsgps))
-                         rsgps)))])
+                     (if (null? rsgps)
+                       'exhausted
+                       (let ([calb (cdr (assq 'Album (car rsgps)))])
+                         (if (equal? calb album)
+                           (loop (cdr rsgps))
+                           rsgps))))])
       (loop songprops))))
 
 ; [tonext-album a s] removes all songs from alist [s] appearing before
@@ -82,13 +89,16 @@
   (lambda (album songprops)
     (skip-album album (clear-ante-album album songprops))))
 
-; [next-album! '()] plays the first track in
-; [tonext-album ((album playing now) (playlist))]
+; [next-album! c] plays the first track in [tonext-album
+; ((album playing now) (playlist))] of server [c]
 (define next-album!
   (lambda (conn)
-    (let* ([rsongprops (tonext-album current-album current-playlist)]
-           [next-id (cdr (assq 'Id (car rsongprops)))])
-      (play-song! conn next-id))))
+    (let ([next-songs (tonext-album current-album current-playlist)])
+      (if (eq? next-songs 'exhausted)
+        (begin (enqueue-random-album! conn) ; If playlist exhausted, add album
+               (next-album! conn))          ; and recall function
+        (let ((next-id (cdr (assq 'Id (car next-songs)))))
+          (play! conn next-id))))))
 
 ; Clear playlist if play state is stop. Happens when all playlist has been
 ; read (avoid going back to the top).
@@ -98,7 +108,7 @@
 
 ; Looks for options and triggers actions
 (cond ((pair? (assq 'add clopts))
-       (let* ([chosen (choose-album albums)]
+       (let* ([chosen (random-elt albums)]
               [songs (album-to-filelist chosen)])
          (begin
            (if (pair? (assq 'verbose clopts))
