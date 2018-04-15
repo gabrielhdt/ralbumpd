@@ -22,9 +22,12 @@
     ))
 (define clopts (getopt-long (argv) clgrammar))
 
-; [current-album c] returns the album of the playing song
-(define current-album
-  (lambda (conn) (cdr (assq 'Album (get-current-song conn)))))
+; define mpd as the connection
+(define mpd (connect))
+; Currently playing album
+(define current-album (cdr (assq 'Album (get-current-song mpd))))
+; Current playlist
+(define current-playlist (get-playlist mpd))
 
 ; [choose-album a] chooses randomly an album among those in [a]
 (define choose-album
@@ -32,9 +35,6 @@
     (let* ([card (length albums)]
            [ind (random card)])
       (list-ref albums ind))))
-
-; define mpd as the connection
-(define mpd (connect))
 
 ; List of albums in the database
 (define albums (list-metadata mpd 'album))
@@ -48,11 +48,11 @@
 
 ; [enqueue-songpaths s] enequeues songs in [s] into the playlist. [s] contains
 ; the paths relative to mpd database
-(define enqueue-songpaths
+(define enqueue-songpaths!
   (lambda (sgps)
     (if (null? sgps)
       '()
-      (begin (add-song! mpd (car sgps)) (enqueue-songpaths (cdr sgps))))))
+      (begin (add-song! mpd (car sgps)) (enqueue-songpaths! (cdr sgps))))))
 
 ; [clear-ante-album a s] removes all songs from songprops [s] before the first
 ; song of album [a]
@@ -80,14 +80,13 @@
 ; the album [a] and all songs of album [a].
 (define tonext-album
   (lambda (album songprops)
-    (skip-album (clear-ante-album album songprops))))
+    (skip-album album (clear-ante-album album songprops))))
 
 ; [next-album! '()] plays the first track in
 ; [tonext-album ((album playing now) (playlist))]
 (define next-album!
   (lambda (conn)
-    (let* ([rsongprops (tonext-album ((current-album conn)
-                                      (get-playlist conn)))]
+    (let* ([rsongprops (tonext-album current-album current-playlist)]
            [next-id (cdr (assq 'Id (car rsongprops)))])
       (play-song! conn next-id))))
 
@@ -107,7 +106,7 @@
                (display "Adding album: ")
                (display chosen)
                (newline)))
-           (enqueue-songpaths songs))))
+           (enqueue-songpaths! songs))))
       ((pair? (assq 'next clopts))
-       (next-album!))
+       (next-album! mpd))
       (else (display (usage clgrammar))))
