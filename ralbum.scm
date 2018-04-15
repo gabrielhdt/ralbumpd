@@ -4,13 +4,13 @@
 ; Command line options
 (define clgrammar
   '((add "Add an album"
-	 (single-char #\a)
-	 (required #f)
-	 (value #f))
+         (single-char #\a)
+         (required #f)
+         (value #f))
     (verbose "Verbose mode"
-	     (required #f)
-	     (single-char #\v)
-	     (value #f))
+             (required #f)
+             (single-char #\v)
+             (value #f))
     ))
 (define clopts (getopt-long (argv) clgrammar))
 
@@ -24,7 +24,7 @@
 (define choose-album
   (lambda (albums)
     (let* ([card (length albums)]
-	   [ind (random card)])
+           [ind (random card)])
       (list-ref albums ind))))
 
 ; [album-to-filelist a] returns the paths of songs (relatively to mpd
@@ -42,31 +42,43 @@
       '()
       (begin (add-song! mpd (car sgps)) (enqueue-songpaths (cdr sgps))))))
 
-; [behead-songprop a s] removes all songs from alist [s] appearing before
-; the album [a] and all songs of album [a].
-(define behead-songprop
+; [clear-ante-album a s] removes all songs from songprops [s] before the first
+; song of album [a]
+(define clear-ante-album
   (lambda (album songprops)
-    (letrec ([clear-ante-album
-	       (lambda (rsps)
-		 (if (eq? (assq 'album (car rsps)) album)
-		   (clear-ante-album (cdr rsps))
-		   rsps))]
-	     [skip-album
-	       (lambda (rsps)
-		 (if (eq? (assq 'album (car rsps)) album)
-		   (skip-album (cdr rsps))
-		   rsps))])
-      (skip-album (clear-ante-album songprops)))))
+    (letrec ([loop (lambda (rsgps)
+                     (let ([calb (cdr (assq 'Album (car rsgps)))])
+                              (if (equal? calb album)
+                                rsgps
+                                (loop (cdr rsgps)))))])
+      (loop songprops))))
+
+; [skip-album a s] removes all songs from [s] following the first one and
+; which are from the same album
+(define skip-album
+  (lambda (album songprops)
+    (letrec ([loop (lambda (rsgps)
+                     (let ([calb (cdr (assq 'Album (car rsgps)))])
+                       (if (equal? calb album)
+                         (loop (cdr rsgps))
+                         rsgps)))])
+      (loop songprops))))
+
+; [tonext-album a s] removes all songs from alist [s] appearing before
+; the album [a] and all songs of album [a].
+(define tonext-album
+  (lambda (album songprops)
+    (skip-album (clear-ante-album album songprops))))
 
 ; [next-album! '()] plays the first track in
 ; [behead-songprop ((album playing now) (playlist))]
 (define next-album!
   (lambda (conn)
-    (let* ([current-album (cdr (assq 'album (get-current-song conn)))]
-	   [rsongprops (behead-songprop (current-album (get-playlist conn)))]
-	   [next-id (cdr (assq 'id (car rsongprops)))])
+    (let* ([current-album (cdr (assq 'Album (get-current-song conn)))]
+           [rsongprops (tonext-album (current-album (get-playlist conn)))]
+           [next-id (cdr (assq 'Id (car rsongprops)))])
       (play-song! conn next-id))))
-      
+
 
 
 ; Clear playlist if play state is stop. Happens when all playlist has been
@@ -78,14 +90,14 @@
 ; Looks for options and triggers actions
 (cond ((pair? (assq 'add clopts))
        (let* ([chosen (choose-album albums)]
-	      [songs (album-to-filelist chosen)])
-	 (begin
-	   (if (pair? (assq 'verbose clopts))
-	   (begin
-	     (display "Adding album: ")
-	     (display chosen)
-	     (newline)))
-	   (enqueue-songpaths songs))))
+              [songs (album-to-filelist chosen)])
+         (begin
+           (if (pair? (assq 'verbose clopts))
+             (begin
+               (display "Adding album: ")
+               (display chosen)
+               (newline)))
+           (enqueue-songpaths songs))))
       ((pair? (assq 'next clopts))
        (next-album! '()))
       (else (display "No arg given")))
