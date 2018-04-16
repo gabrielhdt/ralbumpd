@@ -96,9 +96,26 @@
     (let ([next-songs (tonext-album current-album current-playlist)])
       (if (eq? next-songs 'exhausted)
         (begin (enqueue-random-album! conn) ; If playlist exhausted, add album
-               (next-album! conn))          ; and recall function
+               (let* ([nnext-songs (tonext-album current-album
+                                                 (get-playlist conn))]
+                      [next-id (cdr (assq 'Id (car nnext-songs)))])
+                 (play! conn next-id)))
         (let ((next-id (cdr (assq 'Id (car next-songs)))))
           (play! conn next-id))))))
+
+; [count-albums s] counts albums in alist of songs [s]
+(define count-albums
+  (lambda (songprops)
+    (letrec ([loop
+               (lambda (rsprops lalb cnt)
+                 (if (null? rsprops)
+                   cnt
+                   (let ([calb (cdr (assq 'Album (car rsprops)))])
+                     (if (equal? calb lalb)
+                       (loop (cdr rsprops) lalb cnt)
+                       (loop (cdr rsprops) calb (+ cnt 1))))))])
+      (loop songprops current-album 1)))) ; 1 to count current album
+
 
 ; Clear playlist if play state is stop. Happens when all playlist has been
 ; read (avoid going back to the top).
