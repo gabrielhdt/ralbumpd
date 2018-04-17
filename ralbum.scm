@@ -46,19 +46,6 @@
     (let ([songprops (find-songs mpd 'album album)])
       (map (lambda (sp) (cdr (assq 'file sp))) songprops))))
 
-; [enqueue-songpaths s] enequeues songs in [s] into the playlist. [s] contains
-; the paths relative to mpd database
-(define enqueue-songpaths!
-  (lambda (sgps)
-    (if (null? sgps)
-      '()
-      (begin (add-song! mpd (car sgps)) (enqueue-songpaths! (cdr sgps))))))
-
-; [enqueue-random-album! m] adds a random album to the playlist of server [m]
-(define enqueue-random-album!
-  (lambda (conn)
-    (enqueue-songpaths! (album-to-filelist (random-elt albums)))))
-
 ; [clear-ante-album a s] removes all songs from songprops [s] before the first
 ; song of album [a]
 (define clear-ante-album
@@ -89,20 +76,6 @@
   (lambda (album songprops)
     (skip-album album (clear-ante-album album songprops))))
 
-; [next-album! c] plays the first track in [tonext-album
-; ((album playing now) (playlist))] of server [c]
-(define next-album!
-  (lambda (conn)
-    (let ([next-songs (tonext-album current-album current-playlist)])
-      (if (eq? next-songs 'exhausted)
-        (begin (enqueue-random-album! conn) ; If playlist exhausted, add album
-               (let* ([nnext-songs (tonext-album current-album
-                                                 (get-playlist conn))]
-                      [next-id (cdr (assq 'Id (car nnext-songs)))])
-                 (play! conn next-id)))
-        (let ((next-id (cdr (assq 'Id (car next-songs)))))
-          (play! conn next-id))))))
-
 ; [count-albums s] counts albums in alist of songs [s]
 (define count-albums
   (lambda (songprops)
@@ -115,6 +88,34 @@
                        (loop (cdr rsprops) lalb cnt)
                        (loop (cdr rsprops) calb (+ cnt 1))))))])
       (loop songprops current-album 1)))) ; 1 to count current album
+
+; [enqueue-songpaths s] enequeues songs in [s] into the playlist. [s] contains
+; the paths relative to mpd database
+(define enqueue-songpaths!
+  (lambda (sgps)
+    (if (null? sgps)
+      '()
+      (begin (add-song! mpd (car sgps)) (enqueue-songpaths! (cdr sgps))))))
+
+; [enqueue-random-album! m] adds a random album to the playlist of server [m]
+(define enqueue-random-album!
+  (lambda (conn)
+    (enqueue-songpaths! (album-to-filelist (random-elt albums)))))
+
+; [next-album! c] plays the first track in [tonext-album
+; ((album playing now) (playlist))] of server [c]
+(define next-album!
+  (lambda (conn)
+    (let ([next-songs (tonext-album current-album current-playlist)])
+      (if (eq? next-songs 'exhausted)
+        (begin (enqueue-random-album! conn) ; If playlist exhausted, add album
+               ((let* ([nnext-songs (tonext-album current-album
+                                                  (get-playlist conn))]
+                       [next-id (cdr (assq 'Id (car nnext-songs)))])
+                 (display next-id))))
+               ;  ;(play! conn next-id)))
+        (let ((next-id (cdr (assq 'Id (car next-songs)))))
+          (play! conn next-id))))))
 
 
 ; Clear playlist if play state is stop. Happens when all playlist has been
@@ -136,4 +137,11 @@
            (enqueue-songpaths! songs))))
       ((pair? (assq 'next clopts))
        (next-album! mpd))
-      (else (display (usage clgrammar))))
+      ((pair? (assq 'refill clopts))
+       (if (<= (count-albums current-playlist) 1)
+         (enqueue-songpaths! (album-to-filelist (random-elt albums)))
+         '()))
+      (else (begin
+              (display "ralbum")
+              (newline)
+              (display (usage clgrammar)))))
