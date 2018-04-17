@@ -109,11 +109,11 @@
     (let ([next-songs (tonext-album current-album current-playlist)])
       (if (eq? next-songs 'exhausted)
         (begin (enqueue-random-album! conn) ; If playlist exhausted, add album
-               ((let* ([nnext-songs (tonext-album current-album
+               (let* ([nnext-songs (tonext-album current-album
                                                   (get-playlist conn))]
                        [next-id (cdr (assq 'Id (car nnext-songs)))])
-                 (display next-id))))
-               ;  ;(play! conn next-id)))
+                 (play! conn next-id)))
+                 ;(display (cdr (assq 'Title (car nnext-songs))))))
         (let ((next-id (cdr (assq 'Id (car next-songs)))))
           (play! conn next-id))))))
 
