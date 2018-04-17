@@ -24,11 +24,6 @@
 
 ; define mpd as the connection
 (define mpd (connect))
-; Currently playing album
-(define current-album (if (equal? (cdr (assq 'state (get-status mpd)))
-                                  "play")
-                        (cdr (assq 'Album (get-current-song mpd)))
-                        ""))
 ; Current playlist
 (define current-playlist (get-playlist mpd))
 ; List of albums in the database
@@ -40,6 +35,10 @@
     (let* ([card (length elts)]
            [ind (random card)])
       (list-ref elts ind))))
+
+(define get-current-album
+  (lambda (conn)
+    (cdr (assq 'Album (get-current-song conn)))))
 
 
 ; [album-to-filelist a] returns the paths of songs (relatively to mpd
@@ -90,7 +89,7 @@
                      (if (equal? calb lalb)
                        (loop (cdr rsprops) lalb cnt)
                        (loop (cdr rsprops) calb (+ cnt 1))))))])
-      (loop songprops current-album 1)))) ; 1 to count current album
+      (loop songprops (get-current-album mpd) 1)))) ; 1 to count current album
 
 ; [enqueue-songpaths s] enequeues songs in [s] into the playlist. [s] contains
 ; the paths relative to mpd database
@@ -109,10 +108,10 @@
 ; ((album playing now) (playlist))] of server [c]
 (define next-album!
   (lambda (conn)
-    (let ([next-songs (tonext-album current-album current-playlist)])
+    (let ([next-songs (tonext-album (get-current-album conn) current-playlist)])
       (if (eq? next-songs 'exhausted)
         (begin (enqueue-random-album! conn) ; If playlist exhausted, add album
-               (let* ([nnext-songs (tonext-album current-album
+               (let* ([nnext-songs (tonext-album (get-current-album conn)
                                                   (get-playlist conn))]
                       [next-id (cdr (assq 'Id (car nnext-songs)))])
                  (play! conn next-id)))
@@ -143,7 +142,8 @@
       ((pair? (assq 'next clopts))
        (next-album! mpd))
       ((pair? (assq 'refill clopts))
-       (if (<= (count-albums (clear-ante-album current-album current-playlist))
+       (if (<= (count-albums (clear-ante-album (get-current-album mpd)
+                                               current-playlist))
                1)
          (enqueue-songpaths! (album-to-filelist (random-elt albums)))
          '()))
