@@ -111,7 +111,7 @@
         (begin (enqueue-random-album! conn) ; If playlist exhausted, add album
                (let* ([nnext-songs (tonext-album current-album
                                                   (get-playlist conn))]
-                       [next-id (cdr (assq 'Id (car nnext-songs)))])
+                      [next-id (cdr (assq 'Id (car nnext-songs)))])
                  (play! conn next-id)))
                  ;(display (cdr (assq 'Title (car nnext-songs))))))
         (let ((next-id (cdr (assq 'Id (car next-songs)))))
@@ -138,7 +138,8 @@
       ((pair? (assq 'next clopts))
        (next-album! mpd))
       ((pair? (assq 'refill clopts))
-       (if (<= (count-albums current-playlist) 1)
+       (if (<= (count-albums (clear-ante-album current-album current-playlist))
+               1)
          (enqueue-songpaths! (album-to-filelist (random-elt albums)))
          '()))
       (else (begin
