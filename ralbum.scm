@@ -25,7 +25,10 @@
 ; define mpd as the connection
 (define mpd (connect))
 ; Currently playing album
-(define current-album (cdr (assq 'Album (get-current-song mpd))))
+(define current-album (if (equal? (cdr (assq 'state (get-status mpd)))
+                                  "play")
+                        (cdr (assq 'Album (get-current-song mpd)))
+                        ""))
 ; Current playlist
 (define current-playlist (get-playlist mpd))
 ; List of albums in the database
@@ -134,7 +137,9 @@
                (display "Adding album: ")
                (display chosen)
                (newline)))
-           (enqueue-songpaths! songs))))
+           (enqueue-songpaths! songs)
+           (if (equal? (cdr (assq 'state (get-status mpd))) 'stop)
+             (play! mpd)))))
       ((pair? (assq 'next clopts))
        (next-album! mpd))
       ((pair? (assq 'refill clopts))
