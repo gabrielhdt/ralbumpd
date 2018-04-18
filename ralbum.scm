@@ -36,9 +36,14 @@
            [ind (random card)])
       (list-ref elts ind))))
 
+; [get-current-album c] gets currently playing album on connection [c]
 (define get-current-album
   (lambda (conn)
     (cdr (assq 'Album (get-current-song conn)))))
+
+; [get-play-state c] returns play state of connection [c]
+(define get-play-state
+  (lambda (conn) (cdr (assq 'state (get-status conn)))))
 
 
 ; [album-to-filelist a] returns the paths of songs (relatively to mpd
@@ -89,7 +94,7 @@
                      (if (equal? calb lalb)
                        (loop (cdr rsprops) lalb cnt)
                        (loop (cdr rsprops) calb (+ cnt 1))))))])
-      (loop songprops (get-current-album mpd) 1)))) ; 1 to count current album
+      (loop songprops "" 0))))
 
 ; [enqueue-songpaths s] enequeues songs in [s] into the playlist. [s] contains
 ; the paths relative to mpd database
@@ -122,7 +127,7 @@
 
 ; Clear playlist if play state is stop. Happens when all playlist has been
 ; read (avoid going back to the top).
-(if (eq? (cdr (assq 'state (get-status mpd))) 'stop)
+(if (eq? (get-play-state mpd) 'stop)
   (clear-playlist! mpd)
   '())
 
@@ -130,23 +135,21 @@
 (cond ((pair? (assq 'add clopts))
        (let* ([chosen (random-elt albums)]
               [songs (album-to-filelist chosen)])
-         (begin
-           (if (pair? (assq 'verbose clopts))
              (begin
-               (display "Adding album: ")
-               (display chosen)
-               (newline)))
-           (enqueue-songpaths! songs)
-           (if (equal? (cdr (assq 'state (get-status mpd))) 'stop)
-             (play! mpd)))))
+               (enqueue-random-album! mpd)
+               ;(enqueue-songpaths! songs)
+               (if (equal? (get-play-state mpd) 'stop)
+                 (play! mpd)))))
       ((pair? (assq 'next clopts))
        (next-album! mpd))
       ((pair? (assq 'refill clopts))
-       (if (<= (count-albums (clear-ante-album (get-current-album mpd)
-                                               current-playlist))
-               1)
-         (enqueue-songpaths! (album-to-filelist (random-elt albums)))
-         '()))
+       (if (<= (length current-playlist) 0)
+         (enqueue-random-album! mpd)
+         (if (<= (count-albums (clear-ante-album (get-current-album mpd)
+                                                 current-playlist))
+                 1)
+           (enqueue-songpaths! (album-to-filelist (random-elt albums)))
+           '())))
       (else (begin
               (display "ralbum")
               (newline)
