@@ -4,19 +4,20 @@ Listen to albums rather than songs. This script allows one to manipulate mpd
 considering the album as the standard element rather than the song. One can for
 instance go to next album in the queue, add a random album, etc.
 
+## Scheme
+### Requirements
+* chicken scheme compiler (`# apt install csc` on debian)
+* mpd-client egg (`# chicken-install mpd-client`)
+* getopt-long egg (`# chicken-install getopt-long`)
+
+### Building
+Just type `make` at the root of the git repo.
+
 ## Perl
 ### Requirements
-* mpd
 * libaudio-mpd-perl
 * libgetopt-long-descriptive-perl
 
-## Scheme
-Many features are not yet available on the scheme version!
-### Requirements
-* chicken scheme compiler
-* mpd-client egg
-* getopt-long egg
-
 ## Periodic refresh
 Add to user crontab
-``` */20 * * * * perl path/to/ralbum.pl --refill ```
+``` */10 * * * * path/to/ralbum --refill ```
