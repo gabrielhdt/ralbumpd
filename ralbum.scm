@@ -109,9 +109,9 @@
   (lambda (conn)
     (enqueue-songpaths! (album-to-filelist (random-elt albums)))))
 
-; [next-album! c] plays the first track in [tonext-album
+; [play-next! c] plays the first track in [tonext-album
 ; ((album playing now) (playlist))] of server [c]
-(define next-album!
+(define play-next!
   (lambda (conn)
     (let ([next-songs (tonext-album (get-current-album conn) current-playlist)])
       (if (eq? next-songs 'exhausted)
@@ -133,24 +133,24 @@
 
 ; Looks for options and triggers actions
 (cond ((pair? (assq 'add clopts))
-       (let* ([chosen (random-elt albums)]
-              [songs (album-to-filelist chosen)])
-             (begin
-               (enqueue-random-album! mpd)
-               ;(enqueue-songpaths! songs)
-               (if (equal? (get-play-state mpd) 'stop)
-                 (play! mpd)))))
+       (begin
+         (enqueue-random-album! mpd)
+         (if (equal? (get-play-state mpd) 'stop)
+           (play! mpd))))
       ((pair? (assq 'next clopts))
-       (next-album! mpd))
+       (if (<= (length current-playlist) 0)
+         (enqueue-random-album! mpd)
+         (play-next! mpd)))
       ((pair? (assq 'refill clopts))
        (if (<= (length current-playlist) 0)
          (enqueue-random-album! mpd)
          (if (<= (count-albums (clear-ante-album (get-current-album mpd)
                                                  current-playlist))
                  1)
-           (enqueue-songpaths! (album-to-filelist (random-elt albums)))
+           (enqueue-random-album! mpd)
            '())))
       (else (begin
               (display "ralbum")
               (newline)
               (display (usage clgrammar)))))
+(play! mpd)
