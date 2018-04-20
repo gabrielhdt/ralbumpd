@@ -153,4 +153,3 @@
               (display "ralbum")
               (newline)
               (display (usage clgrammar)))))
-(play! mpd)
