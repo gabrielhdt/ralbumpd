@@ -125,31 +125,30 @@
           (play! conn next-id))))))
 
 
-; Clear playlist if play state is stop. Happens when all playlist has been
-; read (avoid going back to the top).
-(if (eq? (get-play-state mpd) 'stop)
-  (clear-playlist! mpd)
-  '())
+(begin
+  ; Clear playlist if play state is stop. Happens when all playlist has been
+  ; read (avoid going back to the top).
+  (if (eq? (get-play-state mpd) 'stop)
+    (clear-playlist! mpd))
 
-; Looks for options and triggers actions
-(cond ((pair? (assq 'add clopts))
-       (begin
-         (enqueue-random-album! mpd)
-         (if (equal? (get-play-state mpd) 'stop)
-           (play! mpd))))
-      ((pair? (assq 'next clopts))
-       (if (<= (length current-playlist) 0)
-         (enqueue-random-album! mpd)
-         (play-next! mpd)))
-      ((pair? (assq 'refill clopts))
-       (if (<= (length current-playlist) 0)
-         (enqueue-random-album! mpd)
-         (if (<= (count-albums (clear-ante-album (get-current-album mpd)
-                                                 current-playlist))
-                 1)
+  ; Looks for options and triggers actions
+  (cond ((pair? (assq 'add clopts))
+         (begin
            (enqueue-random-album! mpd)
-           '())))
-      (else (begin
-              (display "ralbum")
-              (newline)
-              (display (usage clgrammar)))))
+           (if (equal? (get-play-state mpd) 'stop)
+             (play! mpd))))
+        ((pair? (assq 'next clopts))
+         (if (<= (length current-playlist) 0)
+           (enqueue-random-album! mpd)
+           (play-next! mpd)))
+        ((pair? (assq 'refill clopts))
+         (if (<= (length current-playlist) 0)
+           (enqueue-random-album! mpd)
+           (if (<= (count-albums (clear-ante-album (get-current-album mpd)
+                                                   current-playlist))
+                   1)
+             (enqueue-random-album! mpd))))
+        (else (begin
+                (display "ralbum")
+                (newline)
+                (display (usage clgrammar))))))
