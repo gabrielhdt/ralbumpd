@@ -21,3 +21,5 @@ Just type `make` at the root of the git repo.
 ## Periodic refresh
 Add to user crontab
 ``` */10 * * * * path/to/ralbum --refill ```
+or use `mcron` and add `ralbum-job.guile` to `~/.cron/` or
+`~/.config/cron`.
