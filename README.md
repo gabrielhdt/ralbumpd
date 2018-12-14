@@ -13,7 +13,9 @@ instance go to next album in the queue, add a random album, etc.
 Just type `make` at the root of the git repo.
 
 ## Periodic refresh
+### Crontab
 Add to user crontab
 ``` */10 * * * * path/to/ralbum --refill ```
-or use `mcron` and add `ralbum-job.guile` to `~/.cron/` or
-`~/.config/cron`.
+
+### mcron
+Add `ralbum-job.guile` to `~/.cron/` or `~/.config/cron`.
