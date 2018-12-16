@@ -1,0 +1,11 @@
+image: ubuntu:16.04
+
+before_script:
+  - apt update
+  - apt install -y chicken make
+  - chicken-install mpd-client
+  - chicken-install getopt-long
+
+compile:
+  script:
+    - make
