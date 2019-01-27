@@ -18,8 +18,7 @@
     (verbose "Verbose mode"
              (required #f)
              (single-char #\v)
-             (value #f))
-    ))
+             (value #f))))
 (define clopts (getopt-long (argv) clgrammar))
 
 ; define mpd as the connection
