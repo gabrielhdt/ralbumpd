@@ -21,16 +21,25 @@ main = populate =<< execParser opts
       <> header "RalbuMPD - an album based mpd client" )
 
 populate :: ClArgs -> IO ()
+-- populate clargs =
+--   if clargs.action == "refill"
+--   then let plength =
+
+-- |Get length of current playlist
+playlistLength :: MonadMPD m => m Int
+playlistLength m =
+  mPl >>= length
+  where mPl = playListInfo Nothing
 
 -- |Get currently playing album
 getCurrentAlbum :: MonadMPD m => m -> m String
 getCurrentAlbum m =
   let song = currentSong m -- m Maybe song
    in
-    song =<< (\x ->
+    song >>= (\x ->
                  case x of Just s -> MonadMPD sgGetTag Album s
-                           Maybe -> error)
-         =<< \s -> return s
+                           Nothing -> error)
+         >>= \s -> return s
 
 -- |Remove songs from song list until album is found
 clearAnteAlbum :: MonadMPD m => m Album -- ^ Album from where to keep
