@@ -7,9 +7,9 @@ main = cardAlbums >>= print
 -- |Number of albums in the database.
 cardAlbums :: IO Integer
 cardAlbums =
-  let resp = withMPD $ stats
+  let resp = withMPD stats
   in resp
      >>= \es -> either
-                (\l -> return (-1))
-                (\r -> return $ stsAlbums r)
+                (\_ -> return (-1))
+                (return . stsAlbums)
                 es
