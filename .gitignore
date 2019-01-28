@@ -37,3 +37,10 @@ inc/
 ralbum
 tags
 *~
+/ralbumpd
+/ralbumpd.hi
+/incremental.hs
+/incremental.hi
+/incremental
+/doc/Main.html
+/doc/doc-index.html
