@@ -1,6 +1,5 @@
 import Network.MPD
 import System.Random
-import Data.Functor
 
 -- There is a much smarter way:
 -- use randomAlbum >>= enqueueAlbum
@@ -10,7 +9,7 @@ import Data.Functor
 -- |For now only refills playlist
 main :: IO ()
 main =
-  let resp = enqueueAlbum randomAlbum
+  let resp = randomAlbum >>= enqueueAlbum
   in resp >>= \r -> case r of
                       Left _ -> putStrLn "Failed"
                       Right _ -> putStrLn "Album added"
@@ -39,7 +38,10 @@ randomAlbum =
 
 -- |Enqueues an album in the current playlist
 -- the final void looks like cheating
-enqueueAlbum :: IO (Response Value) -> IO (Response ())
+enqueueAlbum :: Response Value -> IO (Response ())
 enqueueAlbum a =
-  let iorqu = a >>= \ra -> return $ (=?) Album <$> ra :: IO (Response Query)
-  in iorqu >>= \rqu -> return $ void $ fmap (withMPD . findAdd) rqu
+  let rqu = (=?) Album <$> a :: Response Query
+      resp = (rqu >>= \q -> return $ findAdd q) :: MonadMPD m => Response (m ())
+  in case resp of
+       Left _ -> error "argh"
+       Right m -> withMPD m
