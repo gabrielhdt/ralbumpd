@@ -39,6 +39,7 @@ enqueueAlbum a =
        Left l -> return $ Left l
        Right m -> withMPD m
 
+-- |Computes the remaining of the playlist
 remainingCurrentPlaylist :: MonadMPD m => m [Song]
 remainingCurrentPlaylist =
   let plLengthPos :: MonadMPD m => m (Maybe Position)
