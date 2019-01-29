@@ -1,10 +1,6 @@
 ralbum
 tags
 *~
-/ralbumpd
-/ralbumpd.hi
-/incremental.hs
-/incremental.hi
-/incremental
 *.o
+*.hi
 doc
