@@ -1,6 +1,5 @@
 import qualified Network.MPD as MPD
 import           System.Random
-import           Control.Applicative
 
 -- |For now only refills playlist
 main :: IO ()
@@ -22,5 +21,5 @@ randomAlbum =
   let albums = MPD.withMPD $ MPD.list MPD.Album Nothing
       card = cardAlbums
       r_ind = card >>= \c -> randomRIO (0, c - 1)
-  in liftA2 (\irlv ri -> (\xs -> xs !! fromInteger ri) <$> irlv)
-     albums r_ind
+  in (\irlv ri -> (\xs -> xs !! fromInteger ri) <$> irlv)
+     <$> albums <*> r_ind
