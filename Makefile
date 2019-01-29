@@ -1,5 +1,5 @@
-SC = csc
+HC = ghc --make
 TARGET = ralbum
 
-$(TARGET): $(TARGET).scm
-	$(SC) $<
+$(TARGET): $(TARGET).hs
+	$(HC) $<
