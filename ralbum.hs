@@ -1,5 +1,6 @@
 import Network.MPD
 import System.Random
+import Data.List
 
 -- |For now only refills playlist
 main :: IO ()
@@ -52,3 +53,14 @@ remainingCurrentPlaylist =
       mPlRange :: MonadMPD m => m (Maybe (Position, Position))
       mPlRange = plRange <$> cSongPos <*> plLengthPos
   in mPlRange >>= playlistInfoRange
+
+-- |Counts number of albums in a list of songs
+countAlbums :: [Song] -> Int
+countAlbums songs =
+  let mayalbums = map (sgGetTag Album) songs
+      albums = foldl (\acc elt ->
+                        case elt of
+                          Nothing -> acc
+                          Just x -> head x : acc) [] mayalbums
+      uniqalb = nub albums
+  in length uniqalb
