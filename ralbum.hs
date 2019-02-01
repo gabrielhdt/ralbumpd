@@ -8,21 +8,21 @@ idling :: Response ()
 idling = Left $ Custom "idle"
 
 -- |For now only refills playlist
-main ::  IO (MPD ())
+main ::  IO ()
 main =
   let remAlbums :: MPD Int
       remAlbums = fmap countAlbums remainingCurrentPlaylist
       addNeeded :: MPD Bool
       addNeeded = remAlbums >>= \i -> return $ i <= 2
-      resp ::  MPD (Response ())
-      resp = addNeeded >>= \b ->
-                             if b
-                             then liftIO $ randomAlbum >>= enqueueAlbum
-                             else liftIO $ return idling
-  in return $ resp >>= \r ->
-    case r of
-      Left err -> throwError err
-      Right _ -> return ()
+      resp = withMPD $ addNeeded
+        >>= \b ->
+              if b
+              then liftIO $ randomAlbum >>= enqueueAlbum
+              else return idling
+  in resp >>= \r
+               -> case r of
+                    Left _ -> putStrLn "failed"
+                    Right _ -> putStrLn "succeeded"
 
 -- |Number of albums in the database.  Allows to evaluate lazily the
 -- list of albums since we do not have to compute its length.
