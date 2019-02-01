@@ -1,14 +1,28 @@
 import Network.MPD
 import System.Random
 import Data.List
+import Control.Monad.Trans
+import Control.Monad.Except (throwError)
+
+idling :: Response ()
+idling = Left $ Custom "idle"
 
 -- |For now only refills playlist
-main :: IO ()
+main ::  IO (MPD ())
 main =
-  let resp = randomAlbum >>= enqueueAlbum
-  in resp >>= \r -> case r of
-                      Left _ -> putStrLn "Failed"
-                      Right _ -> putStrLn "Album added"
+  let remAlbums :: MPD Int
+      remAlbums = fmap countAlbums remainingCurrentPlaylist
+      addNeeded :: MPD Bool
+      addNeeded = remAlbums >>= \i -> return $ i <= 2
+      resp ::  MPD (Response ())
+      resp = addNeeded >>= \b ->
+                             if b
+                             then liftIO $ randomAlbum >>= enqueueAlbum
+                             else liftIO $ return idling
+  in return $ resp >>= \r ->
+    case r of
+      Left err -> throwError err
+      Right _ -> return ()
 
 -- |Number of albums in the database.  Allows to evaluate lazily the
 -- list of albums since we do not have to compute its length.
@@ -41,7 +55,7 @@ enqueueAlbum a =
        Right m -> withMPD m
 
 -- |Computes the remaining of the playlist
-remainingCurrentPlaylist :: MonadMPD m => m [Song]
+remainingCurrentPlaylist :: MPD [Song]
 remainingCurrentPlaylist =
   let plLengthPos :: MonadMPD m => m (Maybe Position)
       plLengthPos = status >>= \st ->
