@@ -1,4 +1,0 @@
-* Revision history for ralbum
-
-** 0.1.0.0 -- 2019-01-29
-   + First haskell version, adds a random album to the playlist.
