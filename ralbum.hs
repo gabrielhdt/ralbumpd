@@ -57,14 +57,11 @@ enqueueAlbum a =
 -- |Computes the remaining of the playlist
 remainingCurrentPlaylist :: MPD [Song]
 remainingCurrentPlaylist =
-  let plLengthPos :: MonadMPD m => m (Maybe Position)
+  let plLengthPos :: MPD (Maybe Position)
       plLengthPos = status >>= \st ->
         return $ Just $ fromInteger (stPlaylistLength st)
-      cSongPos :: MonadMPD m => m (Maybe Position)
       cSongPos = fmap stSongPos status
-      plRange :: Maybe Position -> Maybe Position -> Maybe (Position, Position)
       plRange ml mu = (\l u -> (l, u)) <$> ml <*> mu
-      mPlRange :: MonadMPD m => m (Maybe (Position, Position))
       mPlRange = plRange <$> cSongPos <*> plLengthPos
   in mPlRange >>= playlistInfoRange
 
