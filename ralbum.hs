@@ -108,3 +108,16 @@ countAlbums songs =
                           Just x -> head x : acc) [] mayalbums
       uniqalb = nub albums
   in length uniqalb
+
+-- |Count number of songs before next album in the playlist
+remBeforeNext :: [Song] -> Int
+remBeforeNext ss =
+  let currAlb = sgGetTag Album $ head ss
+      loop :: Int -> [Song] -> Int
+      loop k [] = k
+      loop k (x : xs) =
+        let mayalb = sgGetTag Album x
+        in if mayalb == currAlb
+           then loop (k + 1) xs
+           else k
+  in loop 0 ss
