@@ -3,13 +3,40 @@ import System.Random
 import Data.List
 import Control.Monad.Trans
 import Control.Monad.Except (throwError)
+import Options.Applicative
+import Data.Semigroup ((<>))
 
 idling :: Response ()
 idling = Left $ Custom "idle"
 
+data PlAction = PlAction
+                { refill :: Bool
+                , add    :: Bool
+                , next   :: Bool }
+
+plAction :: Parser PlAction
+plAction = PlAction
+           <$> switch ( long "refill"
+                        <> short 'r'
+                        <> help "Add an album if playlist near empty" )
+           <*> switch ( long "add"
+                      <> short 'a'
+                      <> help "Add a random album to the playlist" )
+           <*> switch ( long "next"
+                        <> short 'n'
+                        <> help "Go to next album in playlist" )
+
 -- |For now only refills playlist
 main ::  IO ()
-main =
+main = act =<< execParser opts
+  where
+    opts = info (plAction <**> helper)
+      ( fullDesc
+      <> progDesc "Manipulate the Music Player Daemon via albums"
+      <> header "What the header should be?" )
+
+act :: PlAction -> IO ()
+act (PlAction True False False) =
   let remAlbums :: MPD Int
       remAlbums = fmap countAlbums remainingCurrentPlaylist
       addNeeded :: MPD Bool
@@ -23,6 +50,12 @@ main =
                -> case r of
                     Left _ -> putStrLn "failed"
                     Right _ -> putStrLn "succeeded"
+act ( PlAction False True False) =
+  randomAlbum >>= enqueueAlbum
+  >>= \r -> case r of
+              Left _ -> putStrLn "failed"
+              Right _ -> putStrLn "succeeded"
+act PlAction {} = putStrLn "Not implemented yet"
 
 -- |Number of albums in the database.  Allows to evaluate lazily the
 -- list of albums since we do not have to compute its length.
