@@ -1,17 +1,16 @@
+module Ralbum
+  ( act
+  , enqueueAlbum
+  , plAction
+  ) where
+
 import           Network.MPD
 import qualified System.Random as R
 import           Data.List
 import           Control.Monad.Trans
 import           Options.Applicative
-import           Data.Semigroup ((<>))
 
-idling :: Response ()
-idling = Left $ Custom "idle"
 
-data PlAction = PlAction
-                { refill      :: Bool
-                , add         :: Bool
-                , nextAlbum   :: Bool }
 
 plAction :: Parser PlAction
 plAction = PlAction
@@ -25,13 +24,15 @@ plAction = PlAction
                         <> short 'n'
                         <> help "Go to next album in playlist" )
 
-main ::  IO ()
-main = act =<< execParser opts
-  where
-    opts = info (plAction <**> helper)
-      ( fullDesc
-      <> progDesc "Manipulate the Music Player Daemon via albums"
-      <> header "Ralbum - Random album Music Player Daemon client" )
+
+
+idling :: Response ()
+idling = Left $ Custom "idle"
+
+data PlAction = PlAction
+                { refill      :: Bool
+                , add         :: Bool
+                , nextAlbum   :: Bool }
 
 -- |Process final response from MPD
 dealWithFailure :: Response () -> IO ()
