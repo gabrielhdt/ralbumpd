@@ -1,6 +1,7 @@
 module Ralbum
   ( act
-  , enqueueAlbum
+  , addRandom
+  , playNextAlbum
   , plAction
   ) where
 
@@ -57,17 +58,22 @@ act (PlAction True False False) =
                     Left _ -> putStrLn "failed"
                     Right _ -> putStrLn "succeeded"
 
-act (PlAction False True False) =
-  randomAlbum >>= enqueueAlbum >>= dealWithFailure
+act (PlAction False True False) = addRandom >>= dealWithFailure
 
-act (PlAction False False True) =
+act (PlAction False False True) = playNextAlbum >>= dealWithFailure
+
+act PlAction {} = putStrLn "Not implemented yet"
+
+addRandom :: IO (Response ())
+addRandom = randomAlbum >>= enqueueAlbum
+
+playNextAlbum :: IO (Response ())
+playNextAlbum =
   let remSongs = fmap (Just . remBeforeNext) remainingCurrentPlaylist
       currPos = fmap stSongPos status
       nextAlbPos :: MPD (Maybe Position)
       nextAlbPos = liftA2 (+) <$> currPos <*> remSongs
-  in withMPD (nextAlbPos >>= play) >>= dealWithFailure
-
-act PlAction {} = putStrLn "Not implemented yet"
+  in withMPD (nextAlbPos >>= play)
 
 -- |Number of albums in the database.  Allows to evaluate lazily the
 -- list of albums since we do not have to compute its length.
