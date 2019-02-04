@@ -5,12 +5,12 @@ module Ralbum
   , dealWithFailure
   ) where
 
-import           Network.MPD
-import qualified System.Random as R
-import           Data.List
 import           Control.Monad
 import           Control.Monad.Trans
+import           Data.List
+import           Network.MPD
 import           Options.Applicative
+import qualified System.Random as R
 
 idling :: Response ()
 idling = Left $ Custom "idle"

@@ -1,6 +1,6 @@
-import           Options.Applicative
-import           Data.Semigroup ((<>))
-import           Ralbum
+import Data.Semigroup ((<>))
+import Options.Applicative
+import Ralbum
 
 data PlAction = PlAction
                 { refill      :: Bool
@@ -31,9 +31,6 @@ plAction = PlAction
 -- arguments
 act :: PlAction -> IO ()
 act (PlAction True False False) = refillPlaylist >>= dealWithFailure
-
 act (PlAction False True False) = addRandom >>= dealWithFailure
-
 act (PlAction False False True) = playNextAlbum >>= dealWithFailure
-
 act PlAction {} = putStrLn "Not implemented yet"
