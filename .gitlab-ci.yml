@@ -4,6 +4,7 @@ services:
   - docker:dind
 
 before_script:
+  - cabal update
   - cabal install libmpd
 
 build:
