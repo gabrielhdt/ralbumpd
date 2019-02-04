@@ -2,7 +2,6 @@ import           Network.MPD
 import qualified System.Random as R
 import           Data.List
 import           Control.Monad.Trans
-import           Control.Monad.Except (throwError)
 import           Options.Applicative
 import           Data.Semigroup ((<>))
 
@@ -36,7 +35,7 @@ main = act =<< execParser opts
 
 -- |Process final response from MPD
 dealWithFailure :: Response () -> IO ()
-dealWithFailure (Left _) = putStrLn "failed"
+dealWithFailure (Left m) = print m
 dealWithFailure (Right _) = putStrLn "succeeded"
 
 -- |Performs the IO action in function of the parsed command line
@@ -58,10 +57,7 @@ act (PlAction True False False) =
                     Right _ -> putStrLn "succeeded"
 
 act (PlAction False True False) =
-  randomAlbum >>= enqueueAlbum
-  >>= \r -> case r of
-              Left _ -> putStrLn "failed"
-              Right _ -> putStrLn "succeeded"
+  randomAlbum >>= enqueueAlbum >>= dealWithFailure
 
 act (PlAction False False True) =
   let remSongs = fmap (Just . remBeforeNext) remainingCurrentPlaylist
