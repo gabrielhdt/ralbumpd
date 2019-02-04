@@ -12,6 +12,9 @@ import           Network.MPD
 import           Options.Applicative
 import qualified System.Random as R
 
+minAlbum :: Int
+minAlbum = 2
+
 idling :: Response ()
 idling = Left $ Custom "idle"
 
@@ -29,7 +32,6 @@ playNextAlbum :: IO (Response ())
 playNextAlbum =
   let remSongs = fmap (Just . remBeforeNext) remainingCurrentPlaylist
       currPos = fmap stSongPos status
-      nextAlbPos :: MPD (Maybe Position)
       nextAlbPos = liftA2 (+) <$> currPos <*> remSongs
   in withMPD (nextAlbPos >>= play)
 
@@ -37,14 +39,13 @@ playNextAlbum =
 -- exhausted
 refillPlaylist :: IO (Response ())
 refillPlaylist =
-  let remAlbums :: MPD Int
-      remAlbums = fmap countAlbums remainingCurrentPlaylist
-      addNeeded :: MPD Bool
-      addNeeded = remAlbums >>= \i -> return $ i <= 2
+  let remAlbums = fmap countAlbums remainingCurrentPlaylist
       resp :: IO (Response (Response ()))
       resp = withMPD $
-        (\an op -> if an then op else idling) -- TODO: do not use an mpderror
-        <$> addNeeded
+        (\remA op -> if remA <= minAlbum
+                     then op
+                     else idling) -- TODO: do not use an mpderror
+        <$> remAlbums
         <*> liftIO (randomAlbum >>= enqueueAlbum)
       in resp >>= \r -> return $ join r
 
@@ -72,8 +73,8 @@ randomAlbum =
 -- |Enqueue an album in the current playlist
 enqueueAlbum :: Response Value -> IO (Response ())
 enqueueAlbum a =
-  let rqu = (=?) Album <$> a :: Response Query
-      resp = (rqu >>= \q -> return $ findAdd q) :: MonadMPD m => Response (m ())
+  let rqu = (=?) Album <$> a
+      resp = (rqu >>= \q -> return $ findAdd q)
   in case resp of
        Left l -> return $ Left l
        Right m -> withMPD m
