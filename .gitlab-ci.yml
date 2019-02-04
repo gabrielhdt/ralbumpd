@@ -4,11 +4,9 @@ services:
   - docker:dind
 
 before_script:
-  - docker info
+  - cabal install libmpd
 
 build:
   stage: build
   script:
-    - apk add --update ghc make curl
-    - curl -sSL https://get.haskellstack.org | sh
-    - make setup build
+    - make
