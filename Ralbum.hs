@@ -1,72 +1,30 @@
 module Ralbum
-  ( act
-  , addRandom
+  ( addRandom
   , playNextAlbum
-  , plAction
+  , refillPlaylist
+  , dealWithFailure
   ) where
 
 import           Network.MPD
 import qualified System.Random as R
 import           Data.List
+import           Control.Monad
 import           Control.Monad.Trans
 import           Options.Applicative
 
-
-
-plAction :: Parser PlAction
-plAction = PlAction
-           <$> switch ( long "refill"
-                        <> short 'r'
-                        <> help "Add an album if playlist near empty" )
-           <*> switch ( long "add"
-                      <> short 'a'
-                      <> help "Add a random album to the playlist" )
-           <*> switch ( long "next"
-                        <> short 'n'
-                        <> help "Go to next album in playlist" )
-
-
-
 idling :: Response ()
 idling = Left $ Custom "idle"
-
-data PlAction = PlAction
-                { refill      :: Bool
-                , add         :: Bool
-                , nextAlbum   :: Bool }
 
 -- |Process final response from MPD
 dealWithFailure :: Response () -> IO ()
 dealWithFailure (Left m) = print m
 dealWithFailure (Right _) = putStrLn "succeeded"
 
--- |Performs the IO action in function of the parsed command line
--- arguments
-act :: PlAction -> IO ()
-act (PlAction True False False) =
-  let remAlbums :: MPD Int
-      remAlbums = fmap countAlbums remainingCurrentPlaylist
-      addNeeded :: MPD Bool
-      addNeeded = remAlbums >>= \i -> return $ i <= 2
-      resp = withMPD $ addNeeded
-        >>= \b ->
-              if b
-              then liftIO $ randomAlbum >>= enqueueAlbum
-              else return idling
-  in resp >>= \r
-               -> case r of
-                    Left _ -> putStrLn "failed"
-                    Right _ -> putStrLn "succeeded"
-
-act (PlAction False True False) = addRandom >>= dealWithFailure
-
-act (PlAction False False True) = playNextAlbum >>= dealWithFailure
-
-act PlAction {} = putStrLn "Not implemented yet"
-
+-- |Add a random album to the playlist
 addRandom :: IO (Response ())
 addRandom = randomAlbum >>= enqueueAlbum
 
+-- |Play next album in the playlist
 playNextAlbum :: IO (Response ())
 playNextAlbum =
   let remSongs = fmap (Just . remBeforeNext) remainingCurrentPlaylist
@@ -74,6 +32,21 @@ playNextAlbum =
       nextAlbPos :: MPD (Maybe Position)
       nextAlbPos = liftA2 (+) <$> currPos <*> remSongs
   in withMPD (nextAlbPos >>= play)
+
+-- |Add a random album in playlist only if playlist almost
+-- exhausted
+refillPlaylist :: IO (Response ())
+refillPlaylist =
+  let remAlbums :: MPD Int
+      remAlbums = fmap countAlbums remainingCurrentPlaylist
+      addNeeded :: MPD Bool
+      addNeeded = remAlbums >>= \i -> return $ i <= 2
+      resp :: IO (Response (Response ()))
+      resp = withMPD $
+        (\an op -> if an then op else idling) -- TODO: do not use an mpderror
+        <$> addNeeded
+        <*> liftIO (randomAlbum >>= enqueueAlbum)
+      in resp >>= \r -> return $ join r
 
 -- |Number of albums in the database.  Allows to evaluate lazily the
 -- list of albums since we do not have to compute its length.
