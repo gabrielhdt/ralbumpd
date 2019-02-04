@@ -9,6 +9,6 @@ build:
     - cabal sandbox init
     - cabal update
     - cabal install --only-dependencies
-    - runhaskell Setup.hs configure
-    - runhaskell Setup.hs build
-    # - make
+    # - runhaskell Setup.hs configure --user
+    # - runhaskell Setup.hs build
+    - make
