@@ -3,11 +3,12 @@ image: haskell:8
 services:
   - docker:dind
 
+before_script:
+  - cabal update
+
 build:
   stage: build
   script:
-    - cabal sandbox init
-    - cabal update
     - cabal install --only-dependencies
     # - runhaskell Setup.hs configure --user
     # - runhaskell Setup.hs build
