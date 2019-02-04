@@ -5,7 +5,7 @@ services:
 
 before_script:
   - cabal update
-  - cabal install libmpd
+  - cabal install  random optparse-applicative libmpd
 
 build:
   stage: build
