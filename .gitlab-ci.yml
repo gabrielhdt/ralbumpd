@@ -1,9 +1,14 @@
-image: ubuntu:16.04
+image: docker:stable
+
+services:
+  - docker:dind
 
 before_script:
-  - apt update
-  - apt install -y ghc ghc-libmpd
+  - docker info
 
-compile:
+build:
+  stage: build
   script:
-    - make
+    - apk add --update ghc make curl
+    - curl -sSL https://get.haskellstack.org | sh
+    - make setup build
