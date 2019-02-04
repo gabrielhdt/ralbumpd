@@ -1,7 +1,6 @@
 import Network.MPD
 import qualified System.Random as R
 import Data.List
-import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Except (throwError)
 import Options.Applicative
@@ -36,8 +35,13 @@ main = act =<< execParser opts
       <> progDesc "Manipulate the Music Player Daemon via albums"
       <> header "Ralbum - Random album Music Player Daemon client" )
 
+dealWithFailure :: Response () -> IO ()
+dealWithFailure (Left _) = putStrLn "failed"
+dealWithFailure (Right _) = putStrLn "succeeded"
+
 act :: PlAction -> IO ()
 act (PlAction True False False) =
+  -- ^Refill the playlist if empty
   let remAlbums :: MPD Int
       remAlbums = fmap countAlbums remainingCurrentPlaylist
       addNeeded :: MPD Bool
@@ -51,21 +55,21 @@ act (PlAction True False False) =
                -> case r of
                     Left _ -> putStrLn "failed"
                     Right _ -> putStrLn "succeeded"
+
 act (PlAction False True False) =
+  -- ^Add a random album to the playlist
   randomAlbum >>= enqueueAlbum
   >>= \r -> case r of
               Left _ -> putStrLn "failed"
               Right _ -> putStrLn "succeeded"
+
 act (PlAction False False True) =
-  let remSongs = fmap remBeforeNext remainingCurrentPlaylist
-      skipLoop :: Int -> MPD ()
-      skipLoop k =
-        unless (k == 0) (next >> skipLoop (k - 1))
-      resp = withMPD $ fmap skipLoop remSongs
-  in resp >>= \r
-               -> case r of
-                    Left _ -> putStrLn "failed"
-                    Right _ -> putStrLn "succeeded"
+  -- ^Go to next album in the playlist
+  let remSongs = fmap (Just . remBeforeNext) remainingCurrentPlaylist
+      currPos = fmap stSongPos status
+      nextAlbPos :: MPD (Maybe Position)
+      nextAlbPos = liftA2 (+) <$> currPos <*> remSongs
+  in withMPD (nextAlbPos >>= play) >>= dealWithFailure
 
 act PlAction {} = putStrLn "Not implemented yet"
 
