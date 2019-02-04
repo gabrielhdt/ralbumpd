@@ -8,12 +8,20 @@
 ** Requirements
    + ghc
    + ghc-libmpd
+   + ghc-optparse-applicative
+   + random
 
 ** Building
    #+begin_src sh
+     cabal install --only-dependencies
      ghc --make ralbumpd.hs
    #+end_src
    at the root of git repo.
+   
+** Usage
+   #+begin_src sh
+     ralbum --add|--next|--refill
+   #+end_src
 
 ** Periodic refresh
 *** Crontab
