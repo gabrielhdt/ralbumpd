@@ -10,4 +10,6 @@ before_script:
 build:
   stage: build
   script:
+    - runhaskell Setup.hs configure
+    - runhaskell Setup.hs build
     - make
