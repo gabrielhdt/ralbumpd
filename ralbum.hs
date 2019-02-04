@@ -1,6 +1,7 @@
 import Network.MPD
-import System.Random
+import qualified System.Random as R
 import Data.List
+import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Except (throwError)
 import Options.Applicative
@@ -10,9 +11,9 @@ idling :: Response ()
 idling = Left $ Custom "idle"
 
 data PlAction = PlAction
-                { refill :: Bool
-                , add    :: Bool
-                , next   :: Bool }
+                { refill      :: Bool
+                , add         :: Bool
+                , nextAlbum   :: Bool }
 
 plAction :: Parser PlAction
 plAction = PlAction
@@ -33,7 +34,7 @@ main = act =<< execParser opts
     opts = info (plAction <**> helper)
       ( fullDesc
       <> progDesc "Manipulate the Music Player Daemon via albums"
-      <> header "What the header should be?" )
+      <> header "Ralbum - Random album Music Player Daemon client" )
 
 act :: PlAction -> IO ()
 act (PlAction True False False) =
@@ -50,11 +51,22 @@ act (PlAction True False False) =
                -> case r of
                     Left _ -> putStrLn "failed"
                     Right _ -> putStrLn "succeeded"
-act ( PlAction False True False) =
+act (PlAction False True False) =
   randomAlbum >>= enqueueAlbum
   >>= \r -> case r of
               Left _ -> putStrLn "failed"
               Right _ -> putStrLn "succeeded"
+act (PlAction False False True) =
+  let remSongs = fmap remBeforeNext remainingCurrentPlaylist
+      skipLoop :: Int -> MPD ()
+      skipLoop k =
+        unless (k == 0) (next >> skipLoop (k - 1))
+      resp = withMPD $ fmap skipLoop remSongs
+  in resp >>= \r
+               -> case r of
+                    Left _ -> putStrLn "failed"
+                    Right _ -> putStrLn "succeeded"
+
 act PlAction {} = putStrLn "Not implemented yet"
 
 -- |Number of albums in the database.  Allows to evaluate lazily the
@@ -74,7 +86,7 @@ randomAlbum :: IO (Response Value)
 randomAlbum =
   let albums = withMPD $ list Album Nothing
       card = cardAlbums
-      r_ind = card >>= \c -> randomRIO (0, c - 1)
+      r_ind = card >>= \c -> R.randomRIO (0, c - 1)
   in (\irlv ri -> (\xs -> xs !! fromInteger ri) <$> irlv)
      <$> albums <*> r_ind
 
