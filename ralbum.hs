@@ -1,10 +1,10 @@
-import Network.MPD
+import           Network.MPD
 import qualified System.Random as R
-import Data.List
-import Control.Monad.Trans
-import Control.Monad.Except (throwError)
-import Options.Applicative
-import Data.Semigroup ((<>))
+import           Data.List
+import           Control.Monad.Trans
+import           Control.Monad.Except (throwError)
+import           Options.Applicative
+import           Data.Semigroup ((<>))
 
 idling :: Response ()
 idling = Left $ Custom "idle"
@@ -26,7 +26,6 @@ plAction = PlAction
                         <> short 'n'
                         <> help "Go to next album in playlist" )
 
--- |For now only refills playlist
 main ::  IO ()
 main = act =<< execParser opts
   where
@@ -35,13 +34,15 @@ main = act =<< execParser opts
       <> progDesc "Manipulate the Music Player Daemon via albums"
       <> header "Ralbum - Random album Music Player Daemon client" )
 
+-- |Process final response from MPD
 dealWithFailure :: Response () -> IO ()
 dealWithFailure (Left _) = putStrLn "failed"
 dealWithFailure (Right _) = putStrLn "succeeded"
 
+-- |Performs the IO action in function of the parsed command line
+-- arguments
 act :: PlAction -> IO ()
 act (PlAction True False False) =
-  -- ^Refill the playlist if empty
   let remAlbums :: MPD Int
       remAlbums = fmap countAlbums remainingCurrentPlaylist
       addNeeded :: MPD Bool
@@ -57,14 +58,12 @@ act (PlAction True False False) =
                     Right _ -> putStrLn "succeeded"
 
 act (PlAction False True False) =
-  -- ^Add a random album to the playlist
   randomAlbum >>= enqueueAlbum
   >>= \r -> case r of
               Left _ -> putStrLn "failed"
               Right _ -> putStrLn "succeeded"
 
 act (PlAction False False True) =
-  -- ^Go to next album in the playlist
   let remSongs = fmap (Just . remBeforeNext) remainingCurrentPlaylist
       currPos = fmap stSongPos status
       nextAlbPos :: MPD (Maybe Position)
@@ -85,7 +84,7 @@ cardAlbums =
                 (return . stsAlbums)
                 es
 
--- |Chooses a random album among all available
+-- |Choose a random album among all available
 randomAlbum :: IO (Response Value)
 randomAlbum =
   let albums = withMPD $ list Album Nothing
@@ -94,7 +93,7 @@ randomAlbum =
   in (\irlv ri -> (\xs -> xs !! fromInteger ri) <$> irlv)
      <$> albums <*> r_ind
 
--- |Enqueues an album in the current playlist
+-- |Enqueue an album in the current playlist
 enqueueAlbum :: Response Value -> IO (Response ())
 enqueueAlbum a =
   let rqu = (=?) Album <$> a :: Response Query
@@ -103,7 +102,7 @@ enqueueAlbum a =
        Left l -> return $ Left l
        Right m -> withMPD m
 
--- |Computes the remaining of the playlist
+-- |Compute the remaining of the playlist
 remainingCurrentPlaylist :: MPD [Song]
 remainingCurrentPlaylist =
   let plLengthPos :: MPD (Maybe Position)
@@ -114,7 +113,7 @@ remainingCurrentPlaylist =
       mPlRange = plRange <$> cSongPos <*> plLengthPos
   in mPlRange >>= playlistInfoRange
 
--- |Counts number of albums in a list of songs
+-- |Count number of albums in a list of songs
 countAlbums :: [Song] -> Int
 countAlbums songs =
   let mayalbums = map (sgGetTag Album) songs
