@@ -6,10 +6,10 @@ module Ralbum
   ) where
 
 import           Control.Monad
+import           Control.Applicative
 import           Control.Monad.Trans
 import           Data.List
 import           Network.MPD
-import           Options.Applicative
 import qualified System.Random as R
 
 minAlbum :: Int
@@ -86,8 +86,7 @@ remainingCurrentPlaylist =
       plLengthPos = status >>= \st ->
         return $ Just $ fromInteger (stPlaylistLength st)
       cSongPos = fmap stSongPos status
-      plRange ml mu = (\l u -> (l, u)) <$> ml <*> mu
-      mPlRange = plRange <$> cSongPos <*> plLengthPos
+      mPlRange = liftA2 (,) <$> cSongPos <*> plLengthPos
   in mPlRange >>= playlistInfoRange
 
 -- |Count number of albums in a list of songs
