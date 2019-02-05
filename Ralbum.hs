@@ -5,12 +5,13 @@ module Ralbum
   , dealWithFailure
   ) where
 
-import           Control.Monad
-import           Control.Applicative
-import           Control.Monad.Trans
-import           Data.List
-import           Network.MPD
-import qualified System.Random as R
+import Control.Monad
+import Control.Applicative
+import Control.Monad.Trans
+import Data.List
+import Network.MPD
+import System.IO
+import System.Random (randomRIO)
 
 minAlbum :: Int
 minAlbum = 2
@@ -20,8 +21,8 @@ idling = Left $ Custom "idle"
 
 -- |Process final response from MPD
 dealWithFailure :: Response () -> IO ()
-dealWithFailure (Left m) = print m
-dealWithFailure (Right _) = putStrLn "succeeded"
+dealWithFailure (Left m) = hPutStr stderr $ show m
+dealWithFailure (Right _) = return ()
 
 -- |Add a random album to the playlist
 addRandom :: IO (Response ())
@@ -66,7 +67,7 @@ randomAlbum :: IO (Response Value)
 randomAlbum =
   let albums = withMPD $ list Album Nothing
       card = cardAlbums
-      r_ind = card >>= \c -> R.randomRIO (0, c - 1)
+      r_ind = card >>= \c -> randomRIO (0, c - 1)
   in (\irlv ri -> (\xs -> xs !! fromInteger ri) <$> irlv)
      <$> albums <*> r_ind
 
