@@ -50,25 +50,12 @@ refillPlaylist =
         <*> liftIO (randomAlbum >>= enqueueAlbum)
       in resp >>= \r -> return $ join r
 
--- |Number of albums in the database.  Allows to evaluate lazily the
--- list of albums since we do not have to compute its length.
--- Could be a IO Response Integer
-cardAlbums :: IO Integer
-cardAlbums =
-  let resp = withMPD stats
-  in resp
-     >>= \es -> either
-                (\_ -> return (-1))
-                (return . stsAlbums)
-                es
-
 -- |Choose a random album among all available
 randomAlbum :: IO (Response Value)
 randomAlbum =
   let albums = withMPD $ list Album Nothing
-      card = cardAlbums
-      r_ind = card >>= \c -> randomRIO (0, c - 1)
-  in (\irlv ri -> (\xs -> xs !! fromInteger ri) <$> irlv)
+      r_ind = albums >>= \as -> randomRIO (0, length as - 1)
+  in (\irlv ri -> (\xs -> xs !! ri) <$> irlv)
      <$> albums <*> r_ind
 
 -- |Enqueue an album in the current playlist
