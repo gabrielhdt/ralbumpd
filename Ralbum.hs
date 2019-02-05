@@ -55,7 +55,7 @@ randomAlbum :: IO (Response Value)
 randomAlbum =
   let albums = withMPD $ list Album Nothing
       r_ind = albums >>= \as -> randomRIO (0, length as - 1)
-  in (\irlv ri -> (\xs -> xs !! ri) <$> irlv)
+  in (\irlv ri -> (!! ri) <$> irlv)
      <$> albums <*> r_ind
 
 -- |Enqueue an album in the current playlist
