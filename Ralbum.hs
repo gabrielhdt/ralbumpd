@@ -41,14 +41,11 @@ playNextAlbum =
 refillPlaylist :: IO (Response ())
 refillPlaylist =
   let remAlbums = fmap countAlbums remainingCurrentPlaylist
-      resp :: IO (Response (Response ()))
-      resp = withMPD $
-        (\remA op -> if remA <= minAlbum
-                     then op
-                     else idling) -- TODO: do not use an mpderror
-        <$> remAlbums
-        <*> liftIO (randomAlbum >>= enqueueAlbum)
-      in resp >>= \r -> return $ join r
+      todo = (\remA op ->
+                when (remA <= minAlbum) op)
+             <$> remAlbums
+             <*> liftIO (randomAlbum >>= enqueueAlbum)
+      in withMPD todo >>= \r -> return $ join r
 
 -- |Choose a random album among all available
 randomAlbum :: IO (Response Value)
