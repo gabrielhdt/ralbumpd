@@ -6,6 +6,7 @@ module Ralbum
   ) where
 
 import Control.Applicative
+import Control.Monad
 import Control.Monad.Trans
 import Data.List
 import Network.MPD
@@ -37,13 +38,8 @@ playNextAlbum =
 refillPlaylist :: IO (Response ())
 refillPlaylist =
   let remAlbums = fmap countAlbums remainingCurrentPlaylist
-      todo = (\remA op ->
-                if remA <= minAlbum
-                then ()
-                else op)
-             <$> remAlbums
-             <*> (randomAlbum >>= enqueueAlbum)
-  in withMPD todo
+  in withMPD $ remAlbums >>= \r ->
+    when (r <= minAlbum) $ randomAlbum >>= enqueueAlbum
 
 -- |Choose a random album among all available
 randomAlbum :: MPD Value
