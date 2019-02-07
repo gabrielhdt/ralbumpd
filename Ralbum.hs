@@ -56,8 +56,7 @@ enqueueAlbum = findAdd . (=?) Album
 remainingCurrentPlaylist :: MPD [Song]
 remainingCurrentPlaylist =
   let plLengthPos :: MPD (Maybe Position)
-      plLengthPos = status >>= \st ->
-        return $ Just $ fromInteger (stPlaylistLength st)
+      plLengthPos = fmap (Just . fromInteger . stPlaylistLength) status
       cSongPos = fmap stSongPos status
       mPlRange = liftA2 (,) <$> cSongPos <*> plLengthPos
   in mPlRange >>= playlistInfoRange
