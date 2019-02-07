@@ -10,6 +10,5 @@ build:
   stage: build
   script:
     - cabal install --only-dependencies
-    # - runhaskell Setup.hs configure --user
-    # - runhaskell Setup.hs build
-    - make
+    - runhaskell Setup.hs configure --user
+    - runhaskell Setup.hs build
