@@ -1,11 +1,14 @@
-image: ubuntu:16.04
+image: haskell:8
+
+services:
+  - docker:dind
 
 before_script:
-  - apt update
-  - apt install -y chicken-bin make gcc
-  - chicken-install mpd-client
-  - chicken-install getopt-long
+  - cabal update
 
-compile:
+build:
+  stage: build
   script:
-    - make
+    - cabal install --only-dependencies
+    - runhaskell Setup.hs configure --user
+    - runhaskell Setup.hs build

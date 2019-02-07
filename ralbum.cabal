@@ -1,0 +1,38 @@
+name:                ralbum
+version:             0.0.5
+synopsis:            Album based Music Player Daemon client
+-- description:
+homepage:            https://gitlab.com/gabrielhdt/ralbum
+license:             GPL-3
+license-file:        LICENSE
+author:              Gabriel Hondet
+maintainer:          gabrielhondet@gmail.com
+-- copyright:
+category:            Sound
+build-type:          Simple
+extra-source-files:  README.org
+cabal-version:       >=1.10
+
+library
+  exposed-modules: Ralbum
+  -- other-modules:
+  -- other-extensions:
+  build-depends: base
+               , mtl
+               , libmpd
+               , random >= 1.1
+               , optparse-applicative
+  -- hs-source-dirs:
+  default-language:    Haskell2010
+
+executable ralbum
+  main-is:             Main.hs
+  other-modules: Ralbum
+  -- other-extensions:
+  build-depends: base
+               , mtl
+               , libmpd
+               , random >= 1.1
+               , optparse-applicative
+  -- hs-source-dirs:
+  default-language:    Haskell2010

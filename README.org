@@ -1,0 +1,34 @@
+* Ralbum
+
+  Listen to albums rather than songs. This script allows one to
+  manipulate mpd considering the album as the standard element rather
+  than the song. One can for instance go to next album in the queue,
+  add a random album, &c.
+
+** Requirements
+   + ghc
+   + ghc-libmpd
+   + ghc-optparse-applicative
+   + random
+
+** Building
+   #+begin_src sh
+     cabal install --only-dependencies
+     ghc --make ralbumpd.hs
+   #+end_src
+   at the root of git repo.
+   
+** Usage
+   #+begin_src sh
+     ralbum --add|--next|--refill
+   #+end_src
+
+** Periodic refresh
+*** Crontab
+    Add to user crontab
+    #+begin_src
+      */10 * * * * path/to/ralbumpd --refill
+    #+end_src
+
+*** mcron
+    Add =ralbum-job.guile= to =~/.config/cron=.
