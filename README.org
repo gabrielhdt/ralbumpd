@@ -13,8 +13,8 @@
 
 ** Building
    #+begin_src sh
-     cabal install --only-dependencies
-     ghc --make ralbumpd.hs
+     runhaskell Setup.hs configure --user
+     runhasekll Setup.hs build
    #+end_src
    at the root of git repo.
    
