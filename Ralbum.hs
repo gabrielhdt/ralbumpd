@@ -5,7 +5,6 @@ module Ralbum
   , dealWithFailure
   ) where
 
-import Control.Monad
 import Control.Applicative
 import Control.Monad.Trans
 import Data.List
@@ -16,9 +15,6 @@ import System.Random (randomRIO)
 minAlbum :: Int
 minAlbum = 2
 
-idling :: Response ()
-idling = Left $ Custom "idle"
-
 -- |Process final response from MPD
 dealWithFailure :: Response () -> IO ()
 dealWithFailure (Left m) = hPutStr stderr $ show m
@@ -26,7 +22,7 @@ dealWithFailure (Right _) = return ()
 
 -- |Add a random album to the playlist
 addRandom :: IO (Response ())
-addRandom = randomAlbum >>= enqueueAlbum
+addRandom = withMPD $ randomAlbum >>= enqueueAlbum
 
 -- |Play next album in the playlist
 playNextAlbum :: IO (Response ())
@@ -34,7 +30,7 @@ playNextAlbum =
   let remSongs = fmap (Just . remBeforeNext) remainingCurrentPlaylist
       currPos = fmap stSongPos status
       nextAlbPos = liftA2 (+) <$> currPos <*> remSongs
-  in withMPD (nextAlbPos >>= play)
+  in withMPD $ nextAlbPos >>= play
 
 -- |Add a random album in playlist only if playlist almost
 -- exhausted
@@ -42,27 +38,23 @@ refillPlaylist :: IO (Response ())
 refillPlaylist =
   let remAlbums = fmap countAlbums remainingCurrentPlaylist
       todo = (\remA op ->
-                when (remA <= minAlbum) op)
+                if remA <= minAlbum
+                then ()
+                else op)
              <$> remAlbums
-             <*> liftIO (randomAlbum >>= enqueueAlbum)
-      in withMPD todo >>= \r -> return $ join r
+             <*> (randomAlbum >>= enqueueAlbum)
+  in withMPD todo
 
 -- |Choose a random album among all available
-randomAlbum :: IO (Response Value)
+randomAlbum :: MPD Value
 randomAlbum =
-  let albums = withMPD $ list Album Nothing
-      r_ind = albums >>= \as -> randomRIO (0, length as - 1)
-  in (\irlv ri -> (!! ri) <$> irlv)
-     <$> albums <*> r_ind
+  let albums = list Album Nothing :: MPD [Value]
+      r_ind = albums >>= \as -> liftIO $ randomRIO (0, length as - 1)
+  in (!!) <$> albums <*> r_ind
 
--- |Enqueue an album in the current playlist
-enqueueAlbum :: Response Value -> IO (Response ())
-enqueueAlbum a =
-  let rqu = (=?) Album <$> a
-      resp = (rqu >>= \q -> return $ findAdd q)
-  in case resp of
-       Left l -> return $ Left l
-       Right m -> withMPD m
+-- |Return the MPD action to enqueue an album
+enqueueAlbum :: Value -> MPD ()
+enqueueAlbum = findAdd . (=?) Album
 
 -- |Compute the remaining of the playlist
 remainingCurrentPlaylist :: MPD [Song]
