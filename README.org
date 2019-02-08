@@ -32,3 +32,6 @@
 
 *** mcron
     Add =ralbum-job.guile= to =~/.config/cron=.
+
+
+* TODO next must add album if playlist empty
