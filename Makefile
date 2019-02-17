@@ -1,6 +1,7 @@
 CC = ghc
 RUNH = runhaskell
 OUTDOC = doc
+GUIXENVMANIFEST = guix-env.scm
 
 all: cabal doc
 
@@ -15,8 +16,8 @@ cabal: Setup.hs
 
 .PHONY: guix_cabal
 cabal_guix: Setup.hs
-	fish configure.fish
-	$(RUNH) Setup.hs build
+	guix environment --manifest=$(GUIXENVMANIFEST) -- fish configure.fish
+	guix environment --manifest=$(GUIXENVMANIFEST) -- $(RUNH) Setup.hs build
 
 .PHONY: doc
 doc:
