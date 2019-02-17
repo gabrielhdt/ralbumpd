@@ -5,20 +5,20 @@ module Ralbum
   , dealWithFailure
   ) where
 
-import Control.Applicative
-import Control.Monad
-import Control.Monad.Trans
-import Data.List
-import Network.MPD
-import System.IO
-import System.Random (randomRIO)
+import           Control.Applicative
+import           Control.Monad
+import           Control.Monad.Trans
+import           Data.List
+import           Network.MPD
+import           System.IO
+import           System.Random       (randomRIO)
 
 minAlbum :: Int
 minAlbum = 2
 
 -- |Process final response from MPD
 dealWithFailure :: Response () -> IO ()
-dealWithFailure (Left m) = hPutStr stderr $ show m
+dealWithFailure (Left m)  = hPutStr stderr $ show m
 dealWithFailure (Right _) = return ()
 
 -- |Add a random album to the playlist
@@ -68,7 +68,7 @@ countAlbums songs =
       albums = foldl (\acc elt ->
                         case elt of
                           Nothing -> acc
-                          Just x -> head x : acc) [] mayalbums
+                          Just x  -> head x : acc) [] mayalbums
       uniqalb = nub albums
   in length uniqalb
 
