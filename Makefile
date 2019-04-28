@@ -14,7 +14,7 @@ cabal: Setup.hs
 	$(RUNH) Setup.hs configure
 	$(RUNH) Setup.hs build
 
-.PHONY: guix_cabal
+.PHONY: cabal_guix
 cabal_guix: Setup.hs
 	guix environment --manifest=$(GUIXENVMANIFEST) -- fish configure.fish
 	guix environment --manifest=$(GUIXENVMANIFEST) -- $(RUNH) Setup.hs build
