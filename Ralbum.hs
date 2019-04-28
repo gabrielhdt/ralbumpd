@@ -45,7 +45,7 @@ refillPlaylist =
 randomAlbum :: MPD Value
 randomAlbum =
   let albums = list Album Nothing :: MPD [Value]
-      r_ind = albums >>= liftIO . randomRIO . (,) 0 . (-) 1 . length
+      r_ind = albums >>= liftIO . randomRIO . (,) 0 . (flip (-)) 1 . length
   in (!!) <$> albums <*> r_ind
 
 -- |Return the MPD action to enqueue an album
